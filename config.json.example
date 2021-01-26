@@ -1,0 +1,11 @@
+{
+  "api_key": "api key",
+  "api_secret": "api secret",
+  "api_passphrase": "api pass phrase",
+  "is_sandbox": true,
+  "symbol": "contract name",
+  "leverage": "Leverage of the order",
+  "size": "Order size. Must be a positive number",
+  "resolution": "kline resolution,count by minute,such as 60,it means 60min(1h) kline",
+  "valve": "valve"
+}
