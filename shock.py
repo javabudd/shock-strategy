@@ -27,7 +27,8 @@ class Shock(object):
         self.market = Market(self.api_key, self.api_secret, self.api_passphrase, is_sandbox=self.sandbox)
         self.trade = Trade(self.api_key, self.api_secret, self.api_passphrase, is_sandbox=self.sandbox)
 
-    def error(self, error):
+    def error(self, error, message):
+        print(message)
         time.sleep(self.resolution)
 
     def create_sell_limit_order(self, price):
@@ -37,13 +38,11 @@ class Shock(object):
             while shock.trade.get_order_details(order['orderId']).get('isActive'):
                 print('waiting for order execution...')
         except BaseException as e:
-            print('sell order execution failed!')
-
-            self.error(e)
+            self.error(e, 'sell order execution failed!')
 
             return False
 
-        print('sell order executed', 'order id =', order['orderId'])
+        print('sell order executed: ', 'order id =', order['orderId'])
 
         return True
 
@@ -54,15 +53,32 @@ class Shock(object):
             while shock.trade.get_order_details(order['orderId']).get('isActive'):
                 print('waiting for order execution...')
         except BaseException as e:
-            print('buy order execution failed!')
-
-            self.error(e)
+            self.error(e, 'buy order execution failed!')
 
             return False
 
-        print('buy order executed', 'order id =', order['orderId'])
+        print('buy order executed: ', 'order id =', order['orderId'])
 
         return True
+
+    def get_position_details(self):
+        try:
+            details = self.trade.get_position_details(self.symbol)
+        except BaseException as e:
+            self.error(e, 'position detail retrieval failed!')
+            details = None
+
+        return details
+
+    def get_kline_data(self, kline_from, kline_to):
+        try:
+            kline_data = self.market.get_kline_data(self.symbol, self.resolution, kline_from, kline_to)
+        except BaseException as e:
+            self.error(e, 'kline retrieval failed!')
+
+            kline_data = None
+
+        return kline_data
 
 
 if __name__ == "__main__":
@@ -71,11 +87,9 @@ if __name__ == "__main__":
     while 1:
         time_to = int(time.time() * 1000)
         time_from = time_to - shock.resolution * 60 * 35 * 1000
-        try:
-            data = shock.market.get_kline_data(shock.symbol, shock.resolution, time_from, time_to)
-        except BaseException as e:
-            print('kline retrieval failed!')
-            shock.error(e)
+        data = shock.market.get_kline_data(shock.symbol, shock.resolution, time_from, time_to)
+
+        if data is None:
             continue
 
         now_price = int(data[-1][4])
@@ -98,7 +112,11 @@ if __name__ == "__main__":
         interval_range = (high_track - low_track) / (high_track + low_track)
 
         # current position qty of the symbol
-        position_details = shock.trade.get_position_details(shock.symbol)
+        position_details = shock.get_position_details()
+
+        if position_details is None:
+            continue
+
         position_qty = int(position_details['currentQty'])
 
         order_flag = 0
