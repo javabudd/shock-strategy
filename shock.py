@@ -6,6 +6,7 @@ import json
 import time
 
 from kumex.client import Trade, Market
+from slack import WebClient
 
 
 class Shock(object):
@@ -26,9 +27,12 @@ class Shock(object):
         self.size = float(config['size'])
         self.market = Market(self.api_key, self.api_secret, self.api_passphrase, is_sandbox=self.sandbox)
         self.trade = Trade(self.api_key, self.api_secret, self.api_passphrase, is_sandbox=self.sandbox)
+        self.slack = WebClient(config['slack_token'])
+        self.slack_channel = 'kumex-futures-trader'
 
     def error(self, error, message):
         print(message)
+        self.slack_message(message)
         time.sleep(self.resolution)
 
     def create_sell_limit_order(self, price):
@@ -78,6 +82,9 @@ class Shock(object):
             kline_data = None
 
         return kline_data
+
+    def slack_message(self, message):
+        self.slack.chat_postMessage(channel=self.slack_channel, text=message)
 
 
 if __name__ == "__main__":
