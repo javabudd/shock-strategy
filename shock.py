@@ -75,7 +75,6 @@ class Shock(object):
             kline_data = self.market.get_kline_data(self.symbol, self.resolution, kline_from, kline_to)
         except BaseException as e:
             self.error(e, 'kline retrieval failed!')
-
             kline_data = None
 
         return kline_data
@@ -87,7 +86,7 @@ if __name__ == "__main__":
     while 1:
         time_to = int(time.time() * 1000)
         time_from = time_to - shock.resolution * 60 * 35 * 1000
-        data = shock.market.get_kline_data(shock.symbol, shock.resolution, time_from, time_to)
+        data = shock.get_kline_data(time_from, time_to)
 
         if data is None:
             continue
