@@ -35,10 +35,10 @@ class Shock(object):
         self.slack_message(message)
         time.sleep(self.resolution)
 
-    def create_sell_limit_order(self, price):
+    def create_sell_limit_order(self, price, **kwargs):
         try:
             order = shock.trade.create_limit_order(shock.symbol, 'sell', self.leverage, self.size, price,
-                                                   timeInForce='IOC')
+                                                   timeInForce='IOC', **kwargs)
             while shock.trade.get_order_details(order['orderId']).get('isActive'):
                 print('waiting for order execution...')
         except BaseException as e:
@@ -50,10 +50,10 @@ class Shock(object):
 
         return True
 
-    def create_buy_limit_order(self, price):
+    def create_buy_limit_order(self, price, **kwargs):
         try:
             order = shock.trade.create_limit_order(shock.symbol, 'buy', self.leverage, self.size, price,
-                                                   timeInForce='IOC')
+                                                   timeInForce='IOC', **kwargs)
             while shock.trade.get_order_details(order['orderId']).get('isActive'):
                 print('waiting for order execution...')
         except BaseException as e:
@@ -130,7 +130,6 @@ if __name__ == "__main__":
             order_flag = 1
         elif position_qty < 0:
             order_flag = -1
-            position_qty = abs(position_qty)
 
         if order_flag == 1 and now_price > high_track and shock.create_sell_limit_order(now_price):
             order_flag = 0
@@ -139,6 +138,8 @@ if __name__ == "__main__":
 
         if interval_range < shock.valve and order_flag == 0:
             if now_price > high_track:
-                shock.create_sell_limit_order(now_price)
+                stop_price = now_price * .90
+                shock.create_sell_limit_order(now_price, stop='down', stopPriceType='MP', stopPrice=stop_price)
             elif now_price < low_track:
-                shock.create_buy_limit_order(now_price)
+                stop_price = now_price * .90
+                shock.create_buy_limit_order(now_price, stop='down', stopPriceType='MP', stopPrice=stop_price)
