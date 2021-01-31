@@ -46,7 +46,7 @@ class Shock(object):
 
             return False
 
-        self.slack_message('sell order executed: ' + 'order id =' + order['orderId'])
+        self.slack_message('sell order executed: ' + 'order id = ' + order['orderId'])
 
         return True
 
@@ -61,7 +61,7 @@ class Shock(object):
 
             return False
 
-        self.slack_message('buy order executed: ' + 'order id =' + order['orderId'])
+        self.slack_message('buy order executed: ' + 'order id = ' + order['orderId'])
 
         return True
 
@@ -132,11 +132,13 @@ if __name__ == "__main__":
             order_flag = -1
             position_qty = abs(position_qty)
 
-        if order_flag == 1 and now_price > high_track and shock.create_sell_limit_order(now_price):
+        # future close
+        if order_flag == 1 and now_price > high_track - shock.valve and shock.create_sell_limit_order(now_price):
             order_flag = 0
-        elif order_flag == -1 and now_price < low_track and shock.create_buy_limit_order(now_price):
+        elif order_flag == -1 and now_price < low_track + shock.valve and shock.create_buy_limit_order(now_price):
             order_flag = 0
 
+        # future open
         if interval_range < shock.valve and order_flag == 0:
             if now_price > high_track:
                 shock.create_sell_limit_order(now_price)
