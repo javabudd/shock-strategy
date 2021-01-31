@@ -3,7 +3,9 @@
 
 
 import json
+import threading
 import time
+from http.server import BaseHTTPRequestHandler, HTTPServer
 
 from kumex.client import Trade, Market
 from slack import WebClient
@@ -86,59 +88,72 @@ class Shock(object):
     def slack_message(self, message):
         self.slack.chat_postMessage(channel=self.slack_channel, text=message)
 
+    def loop(self):
+        while 1:
+            print("pepehands")
+            time_to = int(time.time() * 1000)
+            time_from = time_to - self.resolution * 60 * 35 * 1000
+            data = self.get_kline_data(time_from, time_to)
+
+            if data is None:
+                continue
+
+            now_price = int(data[-1][4])
+
+            # high_track
+            high = []
+            for index in range(-30, 0):
+                high.append(data[index][2])
+            high.sort(reverse=True)
+            high_track = float(high[0])
+
+            # low_track
+            low = []
+            for index in range(-30, 0):
+                low.append(data[index][3])
+            low.sort()
+            low_track = float(low[0])
+
+            # interval_range
+            interval_range = (high_track - low_track) / (high_track + low_track)
+
+            # current position qty of the symbol
+            position_details = self.get_position_details()
+
+            if position_details is None:
+                continue
+
+            position_qty = int(position_details['currentQty'])
+
+            order_flag = 0
+            if position_qty > 0:
+                order_flag = 1
+            elif position_qty < 0:
+                order_flag = -1
+
+            if order_flag == 1 and now_price > high_track and self.create_sell_limit_order(now_price):
+                order_flag = 0
+            elif order_flag == -1 and now_price < low_track and self.create_buy_limit_order(now_price):
+                order_flag = 0
+
+            if interval_range < self.valve and order_flag == 0:
+                if now_price > high_track:
+                    self.create_sell_limit_order(now_price)
+                elif now_price < low_track:
+                    self.create_buy_limit_order(now_price)
+
+
+class Webserver(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.end_headers()
+        self.wfile.write(bytes('{"test": 1}', "utf-8"))
+
 
 if __name__ == "__main__":
     shock = Shock()
-
-    while 1:
-        time_to = int(time.time() * 1000)
-        time_from = time_to - shock.resolution * 60 * 35 * 1000
-        data = shock.get_kline_data(time_from, time_to)
-
-        if data is None:
-            continue
-
-        now_price = int(data[-1][4])
-
-        # high_track
-        high = []
-        for index in range(-30, 0):
-            high.append(data[index][2])
-        high.sort(reverse=True)
-        high_track = float(high[0])
-
-        # low_track
-        low = []
-        for index in range(-30, 0):
-            low.append(data[index][3])
-        low.sort()
-        low_track = float(low[0])
-
-        # interval_range
-        interval_range = (high_track - low_track) / (high_track + low_track)
-
-        # current position qty of the symbol
-        position_details = shock.get_position_details()
-
-        if position_details is None:
-            continue
-
-        position_qty = int(position_details['currentQty'])
-
-        order_flag = 0
-        if position_qty > 0:
-            order_flag = 1
-        elif position_qty < 0:
-            order_flag = -1
-            position_qty = abs(position_qty)
-
-        if order_flag == 1 and now_price > high_track and shock.create_sell_limit_order(now_price):
-            order_flag = 0
-        elif order_flag == -1 and now_price < low_track and shock.create_buy_limit_order(now_price):
-            order_flag = 0
-
-        if interval_range < shock.valve and order_flag == 0:
-            if now_price > high_track:
-                shock.create_sell_limit_order(now_price)
-            elif now_price < low_track:
-                shock.create_buy_limit_order(now_price)
+    t1 = threading.Thread(target=shock.loop)
+    t1.start()
+    webServer = HTTPServer(('localhost', 8080), Webserver)
+    webServer.serve_forever()
