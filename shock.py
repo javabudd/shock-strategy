@@ -28,7 +28,7 @@ class Shock(object):
         self.market = Market(self.api_key, self.api_secret, self.api_passphrase, is_sandbox=self.sandbox)
         self.trade = Trade(self.api_key, self.api_secret, self.api_passphrase, is_sandbox=self.sandbox)
         self.slack = WebClient(config['slack_token'])
-        self.slack_channel = 'kumex-futures-trader'
+        self.slack_channel = config['slack_channel']
 
     def error(self, error, message):
         print(message)

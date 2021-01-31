@@ -2,6 +2,8 @@
   "api_key": "api key",
   "api_secret": "api secret",
   "api_passphrase": "api pass phrase",
+  "slack_token": "slackbot token",
+  "slack_channel": "kumex-futures-trader",
   "is_sandbox": true,
   "symbol": "contract name",
   "leverage": "Leverage of the order",
