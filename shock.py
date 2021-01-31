@@ -46,7 +46,7 @@ class Shock(object):
 
             return False
 
-        print('sell order executed: ', 'order id =', order['orderId'])
+        self.slack_message('sell order executed: ' + 'order id =' + order['orderId'])
 
         return True
 
@@ -61,7 +61,7 @@ class Shock(object):
 
             return False
 
-        print('buy order executed: ', 'order id =', order['orderId'])
+        self.slack_message('buy order executed: ' + 'order id =' + order['orderId'])
 
         return True
 
