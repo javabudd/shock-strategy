@@ -100,6 +100,10 @@ if __name__ == "__main__":
 
         now_price = int(data[-1][4])
 
+        if now_price == 0:
+            shock.slack_message('kline retrieval corrupted: ' + json.dumps(data))
+            continue
+
         # high_track
         high = []
         for index in range(-30, 0):
