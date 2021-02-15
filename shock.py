@@ -109,6 +109,10 @@ if __name__ == "__main__":
         for index in range(-30, 0):
             if index in data:
                 high.append(data[index][2])
+
+        if len(high) == 0:
+            continue
+
         high.sort(reverse=True)
         high_track = float(high[0])
 
@@ -117,6 +121,10 @@ if __name__ == "__main__":
         for index in range(-30, 0):
             if index in data:
                 low.append(data[index][3])
+
+        if len(low) == 0:
+            continue
+
         low.sort()
         low_track = float(low[0])
 
