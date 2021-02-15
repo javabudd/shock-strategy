@@ -98,7 +98,7 @@ if __name__ == "__main__":
         if data is None:
             continue
 
-        now_price = int(data[-1][4])
+        now_price = float(data[-1][4])
 
         if now_price == 0:
             shock.slack_message('kline retrieval corrupted: ' + json.dumps(data[-1]))
