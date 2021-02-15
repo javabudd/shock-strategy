@@ -107,14 +107,16 @@ if __name__ == "__main__":
         # high_track
         high = []
         for index in range(-30, 0):
-            high.append(data[index][2])
+            if index in data:
+                high.append(data[index][2])
         high.sort(reverse=True)
         high_track = float(high[0])
 
         # low_track
         low = []
         for index in range(-30, 0):
-            low.append(data[index][3])
+            if index in data:
+                low.append(data[index][3])
         low.sort()
         low_track = float(low[0])
 

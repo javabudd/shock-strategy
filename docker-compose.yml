@@ -6,6 +6,7 @@ services:
       context: ./
       dockerfile: Dockerfile
     privileged: true
+    restart: always
     working_dir: /opt/shock
     volumes:
       - ./:/opt/shock
