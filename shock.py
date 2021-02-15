@@ -32,7 +32,7 @@ class Shock(object):
 
     def error(self, error, message):
         print(message)
-        self.slack_message(message)
+        self.slack_message(message + ': ' + getattr(error, 'message', repr(error)))
         time.sleep(self.resolution)
 
     def create_sell_limit_order(self, price):
