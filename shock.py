@@ -3,6 +3,7 @@
 
 
 import json
+import logging
 import time
 
 from kumex.client import Trade, Market
@@ -31,8 +32,9 @@ class Shock(object):
         self.slack_channel = config['slack_channel']
 
     def error(self, error, message):
-        print(message)
-        self.slack_message(message + ': ' + getattr(error, 'message', repr(error)))
+        message = message + ': ' + getattr(error, 'message', repr(error))
+        logging.error(message)
+        self.slack_message(message)
         time.sleep(self.resolution)
 
     def create_sell_limit_order(self, price):
@@ -40,7 +42,7 @@ class Shock(object):
             order = shock.trade.create_limit_order(shock.symbol, 'sell', self.leverage, self.size, price,
                                                    timeInForce='IOC')
             while shock.trade.get_order_details(order['orderId']).get('isActive'):
-                print('waiting for order execution...')
+                logging.info('waiting for order execution...')
         except BaseException as e:
             self.error(e, 'sell order execution failed!')
 
@@ -55,7 +57,7 @@ class Shock(object):
             order = shock.trade.create_limit_order(shock.symbol, 'buy', self.leverage, self.size, price,
                                                    timeInForce='IOC')
             while shock.trade.get_order_details(order['orderId']).get('isActive'):
-                print('waiting for order execution...')
+                logging.info('waiting for order execution...')
         except BaseException as e:
             self.error(e, 'buy order execution failed!')
 
@@ -84,11 +86,14 @@ class Shock(object):
         return kline_data
 
     def slack_message(self, message):
+        logging.info(message)
         self.slack.chat_postMessage(channel=self.slack_channel, text=message)
 
 
 if __name__ == "__main__":
     shock = Shock()
+    logging.basicConfig(level=logging.INFO)
+    logging.info('Starting trader...')
 
     while 1:
         time_to = int(time.time() * 1000)
@@ -145,6 +150,10 @@ if __name__ == "__main__":
         elif position_qty < 0:
             order_flag = -1
             position_qty = abs(position_qty)
+
+        logging.info('Interval Range: ' + str(interval_range))
+        logging.info('High: ' + str(high_track))
+        logging.info('Low: ' + str(low_track))
 
         # future close
         if order_flag == 1 and now_price > high_track - shock.valve and shock.create_sell_limit_order(now_price):
