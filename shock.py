@@ -101,12 +101,13 @@ if __name__ == "__main__":
         data = shock.get_kline_data(time_from, time_to)
 
         if data is None:
+            logging.error('Failed retrieving kline data')
             continue
 
         now_price = float(data[-1][4])
 
         if now_price == 0:
-            shock.slack_message('kline retrieval corrupted: ' + json.dumps(data[-1]))
+            logging.error('Failed retrieving corrupted')
             continue
 
         # high_track
@@ -116,6 +117,7 @@ if __name__ == "__main__":
                 high.append(data[index][2])
 
         if len(high) == 0:
+            logging.error('Failed to get a high range')
             continue
 
         high.sort(reverse=True)
@@ -128,6 +130,7 @@ if __name__ == "__main__":
                 low.append(data[index][3])
 
         if len(low) == 0:
+            logging.error('Failed to get a low range')
             continue
 
         low.sort()
@@ -140,6 +143,7 @@ if __name__ == "__main__":
         position_details = shock.get_position_details()
 
         if position_details is None:
+            logging.error('Failed retrieving position details')
             continue
 
         position_qty = int(position_details['currentQty'])
