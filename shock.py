@@ -110,28 +110,22 @@ if __name__ == "__main__":
             logging.error('Failed retrieving corrupted')
             continue
 
-        # high_track
         high = []
-        for index in range(-30, 0):
-            if index in data:
-                high.append(data[index][2])
+        low = []
+        for index in data:
+            high.append(index[2])
+            low.append(index[3])
 
         if len(high) == 0:
             logging.error('Failed to get a high range')
             continue
 
-        high.sort(reverse=True)
-        high_track = float(high[0])
-
-        # low_track
-        low = []
-        for index in range(-30, 0):
-            if index in data:
-                low.append(data[index][3])
-
         if len(low) == 0:
             logging.error('Failed to get a low range')
             continue
+
+        high.sort(reverse=True)
+        high_track = float(high[0])
 
         low.sort()
         low_track = float(low[0])
