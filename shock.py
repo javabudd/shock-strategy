@@ -152,6 +152,7 @@ if __name__ == "__main__":
         logging.info('Interval Range: ' + str(interval_range))
         logging.info('High: ' + str(high_track))
         logging.info('Low: ' + str(low_track))
+        logging.info('Close: ' + str(now_price))
 
         # future close
         if order_flag == 1 and now_price > high_track - shock.valve and shock.create_sell_limit_order(now_price):
