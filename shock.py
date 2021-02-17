@@ -149,10 +149,17 @@ if __name__ == "__main__":
             order_flag = -1
             position_qty = abs(position_qty)
 
-        logging.info('Interval Range: ' + str(interval_range))
         logging.info('High: ' + str(high_track))
         logging.info('Low: ' + str(low_track))
         logging.info('Close: ' + str(now_price))
+
+        within_range = interval_range < shock.valve
+        message_str = 'Interval Range: ' + str(interval_range)
+
+        if within_range:
+            logging.info(message_str)
+        else:
+            logging.warning(message_str)
 
         # future close
         if order_flag == 1 and now_price > high_track - shock.valve and shock.create_sell_limit_order(now_price):
@@ -161,7 +168,7 @@ if __name__ == "__main__":
             order_flag = 0
 
         # future open
-        if interval_range < shock.valve and order_flag == 0:
+        if within_range and order_flag == 0:
             if now_price > high_track:
                 shock.create_sell_limit_order(now_price)
             elif now_price < low_track:
