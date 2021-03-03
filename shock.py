@@ -112,7 +112,7 @@ if __name__ == "__main__":
 
         high = []
         low = []
-        data.pop(0)
+        data.pop(len(data) - 1)
         for index in data:
             high.append(index[2])
             low.append(index[3])
