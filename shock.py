@@ -112,9 +112,10 @@ if __name__ == "__main__":
 
         high = []
         low = []
-        for index in range(-30, 0):
-            high.append(data[index][2])
-            low.append(data[index][3])
+        data.pop(len(data) - 1)
+        for index in data:
+            high.append(index[2])
+            low.append(index[3])
 
         if len(high) == 0:
             logging.error('Failed to get a high range')
