@@ -39,33 +39,77 @@ class Shock(object):
 
     def create_sell_limit_order(self, price):
         try:
-            order = shock.trade.create_limit_order(shock.symbol, 'sell', self.leverage, self.size, price,
+            trade = shock.trade.create_limit_order(shock.symbol, 'sell', self.leverage, self.size, price,
                                                    timeInForce='IOC')
-            while shock.trade.get_order_details(order['orderId']).get('isActive'):
-                logging.info('waiting for order execution...')
         except BaseException as e:
-            self.error(e, 'sell order execution failed!')
+            self.error(e, 'limit sell order execution failed!')
 
-            return False
+            return None
 
-        self.slack_message('sell order executed: ' + 'order id = ' + order['orderId'])
+        if trade is not None:
+            self.slack_message('limit sell order executed: ' + 'order id = ' + trade['orderId'])
 
-        return True
+            return trade['orderId']
+
+        return None
+
+    def create_sell_market_order(self):
+        try:
+            trade = shock.trade.create_market_order(shock.symbol, 'sell', self.leverage, timeInForce='IOC',
+                                                    size=self.size)
+        except BaseException as e:
+            self.error(e, 'market sell order execution failed!')
+
+            return None
+
+        if trade is not None:
+            self.slack_message('market sell order executed: ' + 'order id = ' + trade['orderId'])
+
+            return trade['orderId']
+
+        return None
 
     def create_buy_limit_order(self, price):
         try:
-            order = shock.trade.create_limit_order(shock.symbol, 'buy', self.leverage, self.size, price,
+            trade = shock.trade.create_limit_order(shock.symbol, 'buy', self.leverage, self.size, price,
                                                    timeInForce='IOC')
-            while shock.trade.get_order_details(order['orderId']).get('isActive'):
-                logging.info('waiting for order execution...')
         except BaseException as e:
-            self.error(e, 'buy order execution failed!')
+            self.error(e, 'limit buy order execution failed!')
 
-            return False
+            return None
 
-        self.slack_message('buy order executed: ' + 'order id = ' + order['orderId'])
+        if trade is not None:
+            self.slack_message('limit buy order executed: ' + 'order id = ' + trade['orderId'])
 
-        return True
+            return trade['orderId']
+
+        return None
+
+    def create_buy_market_order(self):
+        try:
+            trade = shock.trade.create_market_order(shock.symbol, 'buy', self.leverage, timeInForce='IOC',
+                                                    size=self.size)
+        except BaseException as e:
+            self.error(e, 'market buy order execution failed!')
+
+            return None
+
+        if trade is not None:
+            self.slack_message('market buy order executed: ' + 'order id = ' + trade['orderId'])
+
+            return trade['orderId']
+
+        return None
+
+    def get_order_by_id(self, trade_order_id):
+        try:
+            trade = shock.trade.get_order_details(trade_order_id)
+        except BaseException as e:
+            self.error(e, 'order retrieval failed!')
+
+            return None
+
+        return trade
 
     def get_position_details(self):
         try:
@@ -94,6 +138,8 @@ if __name__ == "__main__":
     shock = Shock()
     logging.basicConfig(level=logging.INFO)
     logging.info('Starting trader...')
+    loss_threshold = .005
+    purchase_price = 0.0
 
     while 1:
         time_to = int(time.time() * 1000)
@@ -146,9 +192,10 @@ if __name__ == "__main__":
         order_flag = 0
         if position_qty > 0:
             order_flag = 1
+            purchase_price = float(position_details['avgEntryPrice'])
         elif position_qty < 0:
             order_flag = -1
-            position_qty = abs(position_qty)
+            purchase_price = float(position_details['avgEntryPrice'])
 
         within_range = interval_range < shock.valve
         message_str = 'Interval Range: ' + str(interval_range)
@@ -162,15 +209,36 @@ if __name__ == "__main__":
         logging.info('High: ' + str(high_track))
         logging.info('Low: ' + str(low_track))
 
-        # future close
-        if order_flag == 1 and now_price > high_track - shock.valve and shock.create_sell_limit_order(now_price):
-            order_flag = 0
-        elif order_flag == -1 and now_price < low_track + shock.valve and shock.create_buy_limit_order(now_price):
-            order_flag = 0
+        if order_flag != 0 and within_range:
+            if purchase_price == 0.0:
+                logging.error('Failed retrieving last purchase price')
+                continue
+
+            # future close
+            if order_flag == 1:
+                if now_price < purchase_price:
+                    if 1 - (now_price / purchase_price) >= loss_threshold:
+                        shock.create_sell_market_order()
+                        order_flag = 0
+                elif now_price > high_track:
+                    shock.create_sell_market_order()
+                    order_flag = 0
+            elif order_flag == -1:
+                if now_price > purchase_price:
+                    if 1 - (purchase_price / now_price) >= loss_threshold:
+                        shock.create_buy_market_order()
+                        order_flag = 0
+                elif now_price < low_track:
+                    shock.create_buy_market_order()
+                    order_flag = 0
 
         # future open
         if within_range and order_flag == 0:
             if now_price > high_track:
-                shock.create_sell_limit_order(now_price)
+                order = shock.create_sell_limit_order(now_price)
+                if order is not None:
+                    time.sleep(5)
             elif now_price < low_track:
-                shock.create_buy_limit_order(now_price)
+                order = shock.create_buy_limit_order(now_price)
+                if order is not None:
+                    time.sleep(5)
