@@ -197,7 +197,7 @@ if __name__ == "__main__":
             order_flag = -1
             purchase_price = float(position_details['avgEntryPrice'])
 
-        within_range = interval_range < shock.valve
+        within_range = interval_range <= shock.valve
         message_str = 'Interval Range: ' + str(interval_range)
 
         if within_range:
@@ -220,7 +220,7 @@ if __name__ == "__main__":
                     if 1 - (now_price / purchase_price) >= loss_threshold:
                         shock.create_sell_market_order()
                         order_flag = 0
-                elif now_price > high_track:
+                elif now_price > high_track and within_range:
                     shock.create_sell_market_order()
                     order_flag = 0
             elif order_flag == -1:
@@ -228,7 +228,7 @@ if __name__ == "__main__":
                     if 1 - (purchase_price / now_price) >= loss_threshold:
                         shock.create_buy_market_order()
                         order_flag = 0
-                elif now_price < low_track:
+                elif now_price < low_track and within_range:
                     shock.create_buy_market_order()
                     order_flag = 0
 
