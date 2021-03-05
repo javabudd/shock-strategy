@@ -46,7 +46,7 @@ class Shock(object):
 
             return None
 
-        if trade is not None:
+        if trade is not None and 'orderId' in trade:
             self.slack_message('limit sell order executed: ' + 'order id = ' + trade['orderId'])
 
             return trade['orderId']
@@ -62,7 +62,7 @@ class Shock(object):
 
             return None
 
-        if trade is not None:
+        if trade is not None and 'orderId' in trade:
             self.slack_message('market sell order executed: ' + 'order id = ' + trade['orderId'])
 
             return trade['orderId']
@@ -78,7 +78,7 @@ class Shock(object):
 
             return None
 
-        if trade is not None:
+        if trade is not None and 'orderId' in trade:
             self.slack_message('limit buy order executed: ' + 'order id = ' + trade['orderId'])
 
             return trade['orderId']
@@ -94,7 +94,7 @@ class Shock(object):
 
             return None
 
-        if trade is not None:
+        if trade is not None and 'orderId' in trade:
             self.slack_message('market buy order executed: ' + 'order id = ' + trade['orderId'])
 
             return trade['orderId']
