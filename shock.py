@@ -219,22 +219,26 @@ if __name__ == "__main__":
                 if now_price < purchase_price:
                     if 1 - (now_price / purchase_price) >= loss_threshold:
                         shock.create_sell_market_order()
+                        order_flag = 0
                 elif now_price > high_track:
                     shock.create_sell_market_order()
+                    order_flag = 0
             elif order_flag == -1:
                 if now_price > purchase_price:
                     if 1 - (purchase_price / now_price) >= loss_threshold:
                         shock.create_buy_market_order()
+                        order_flag = 0
                 elif now_price < low_track:
                     shock.create_buy_market_order()
-        else:
-            # future open
-            if within_range and order_flag == 0:
-                if now_price > high_track:
-                    order = shock.create_sell_limit_order(now_price)
-                    if order is not None:
-                        time.sleep(5)
-                elif now_price < low_track:
-                    order = shock.create_buy_limit_order(now_price)
-                    if order is not None:
-                        time.sleep(5)
+                    order_flag = 0
+
+        # future open
+        if within_range and order_flag == 0:
+            if now_price > high_track:
+                order = shock.create_sell_limit_order(now_price)
+                if order is not None:
+                    time.sleep(5)
+            elif now_price < low_track:
+                order = shock.create_buy_limit_order(now_price)
+                if order is not None:
+                    time.sleep(5)
