@@ -26,6 +26,7 @@ class Shock(object):
         self.valve = float(config['valve'])
         self.leverage = float(config['leverage'])
         self.size = float(config['size'])
+        self.stopLossThreshold = float(config['stop_loss_threshold'])
         self.market = Market(self.api_key, self.api_secret, self.api_passphrase, is_sandbox=self.sandbox)
         self.trade = Trade(self.api_key, self.api_secret, self.api_passphrase, is_sandbox=self.sandbox)
         self.slack = WebClient(config['slack_token'])
@@ -138,7 +139,6 @@ if __name__ == "__main__":
     shock = Shock()
     logging.basicConfig(level=logging.INFO)
     logging.info('Starting trader...')
-    loss_threshold = .005
     purchase_price = 0.0
 
     while 1:
@@ -217,22 +217,24 @@ if __name__ == "__main__":
 
                 # future close
                 if order_flag == 1:
-                    if False and now_price < purchase_price:
-                        if 1 - (now_price / purchase_price) >= loss_threshold:
-                            order = shock.create_sell_market_order()
-                            if order is not None:
-                                time.sleep(60)
+                    if now_price < purchase_price:
+                        if 1 - (now_price / purchase_price) >= shock.stopLossThreshold:
+                            shock.create_sell_market_order()
+                            order_flag = 0
                     elif now_price > high_track:
                         shock.create_sell_market_order()
+                        order_flag = 0
                 elif order_flag == -1:
-                    if False and now_price > purchase_price:
-                        if 1 - (purchase_price / now_price) >= loss_threshold:
-                            order = shock.create_buy_market_order()
-                            if order is not None:
-                                time.sleep(60)
+                    if now_price > purchase_price:
+                        if 1 - (purchase_price / now_price) >= shock.stopLossThreshold:
+                            shock.create_buy_market_order()
+                            order_flag = 0
                     elif now_price < low_track:
                         shock.create_buy_market_order()
-            else:
+                        order_flag = 0
+
+            # future open
+            if order_flag == 0:
                 if now_price > high_track:
                     shock.create_sell_limit_order(now_price)
                 elif now_price < low_track:
