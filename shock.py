@@ -237,6 +237,6 @@ if __name__ == "__main__":
             # future open
             if order_flag == 0:
                 if now_price > high_track:
-                    shock.create_buy_limit_order(now_price)
-                elif now_price < low_track:
                     shock.create_sell_limit_order(now_price)
+                elif now_price < low_track:
+                    shock.create_buy_limit_order(now_price)
