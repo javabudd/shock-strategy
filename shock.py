@@ -27,7 +27,6 @@ class Shock(object):
         self.leverage = float(config['leverage'])
         self.size = float(config['size'])
         self.stopLossThreshold = float(config['stop_loss_threshold'])
-        self.stopWinThreshold = float(config['stop_win_threshold'])
         self.market = Market(self.api_key, self.api_secret, self.api_passphrase, is_sandbox=self.sandbox)
         self.trade = Trade(self.api_key, self.api_secret, self.api_passphrase, is_sandbox=self.sandbox)
         self.slack = WebClient(config['slack_token'])
@@ -222,7 +221,7 @@ if __name__ == "__main__":
                         if 1 - (now_price / purchase_price) >= shock.stopLossThreshold:
                             shock.create_sell_market_order()
                             order_flag = 0
-                    elif 1 - (purchase_price / now_price) >= shock.stopWinThreshold:
+                    elif now_price > high_track:
                         shock.create_sell_market_order()
                         order_flag = 0
                 elif order_flag == -1:
@@ -230,7 +229,7 @@ if __name__ == "__main__":
                         if 1 - (purchase_price / now_price) >= shock.stopLossThreshold:
                             shock.create_buy_market_order()
                             order_flag = 0
-                    elif 1 - (now_price / purchase_price) >= shock.stopWinThreshold:
+                    elif now_price < low_track:
                         shock.create_buy_market_order()
                         order_flag = 0
 
