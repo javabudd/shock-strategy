@@ -158,6 +158,31 @@ class Shock(object):
         return first_candle_high > second_candle_high and third_candle_high < second_candle_low \
                and gap_met and fourth_candle_low < third_candle_low
 
+    @staticmethod
+    def is_three_black_crows(kline_data):
+        first_candle_high = kline_data[-5][2]
+        second_candle_high = kline_data[-4][2]
+        second_candle_low = kline_data[-4][3]
+        third_candle_low = kline_data[-3][3]
+        third_candle_high = kline_data[-3][2]
+        fourth_candle_low = kline_data[-2][3]
+        fifth_candle_low = kline_data[-1][3]
+
+        return first_candle_high < second_candle_high < third_candle_high \
+               and second_candle_low > third_candle_low > fourth_candle_low > fifth_candle_low
+
+    @staticmethod
+    def is_evening_star(kline_data, kline_high_track):
+        first_candle_high = kline_data[-3][2]
+        second_candle_high = kline_data[-2][2]
+        second_candle_low = kline_data[-2][3]
+        third_candle_low = kline_data[-1][3]
+        third_candle_high = kline_data[-1][2]
+
+        return kline_high_track < first_candle_high < second_candle_high \
+               and second_candle_high - second_candle_low <= second_candle_high * .015 \
+               and third_candle_high - third_candle_low >= third_candle_high * .03
+
 
 if __name__ == "__main__":
     shock = Shock()
@@ -197,27 +222,25 @@ if __name__ == "__main__":
             order_flag = -1
             purchase_price = float(position_details['avgEntryPrice'])
 
+        high = []
+        low = []
+        for index in data:
+            high.append(index[2])
+            low.append(index[3])
+
+        high.sort(reverse=True)
+        high_track = float(high[0])
+
+        low.sort()
+        low_track = float(low[0])
+
         if order_flag == 1:
-            high = []
-            for index in data:
-                high.append(index[2])
-
-            high.sort(reverse=True)
-            high_track = float(high[0])
-
             if now_price <= purchase_price:
                 if 1 - (now_price / purchase_price) >= shock.stopLossThreshold:
                     shock.create_sell_market_order()
             elif now_price > high_track:
                 shock.create_sell_market_order()
         elif order_flag == -1:
-            low = []
-            for index in data:
-                low.append(index[3])
-
-            low.sort()
-            low_track = float(low[0])
-
             if now_price >= purchase_price:
                 if 1 - (purchase_price / now_price) >= shock.stopLossThreshold:
                     shock.create_buy_market_order()
@@ -227,4 +250,8 @@ if __name__ == "__main__":
             if shock.is_three_line_strike(data):
                 shock.create_buy_market_order()
             elif shock.is_two_block_gapping(data):
+                shock.create_sell_market_order()
+            elif shock.is_three_black_crows(data):
+                shock.create_sell_market_order()
+            elif shock.is_evening_star(data, high_track):
                 shock.create_sell_market_order()
