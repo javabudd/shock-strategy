@@ -134,6 +134,30 @@ class Shock(object):
         logging.info(message)
         self.slack.chat_postMessage(channel=self.slack_channel, text=message)
 
+    @staticmethod
+    def is_three_line_strike(kline_data):
+        first_candle_low = kline_data[-4][3]
+        second_candle_low = kline_data[-3][3]
+        third_candle_low = kline_data[-2][3]
+        third_candle_high = kline_data[-2][2]
+        fourth_candle_low = kline_data[-1][3]
+
+        return fourth_candle_low < third_candle_low < second_candle_low < first_candle_low \
+               and now_price > third_candle_high
+
+    @staticmethod
+    def is_two_block_gapping(kline_data):
+        first_candle_high = kline_data[-4][2]
+        second_candle_high = kline_data[-3][2]
+        second_candle_low = kline_data[-3][3]
+        third_candle_low = kline_data[-2][3]
+        third_candle_high = kline_data[-2][2]
+        fourth_candle_low = kline_data[-1][3]
+        gap_met = second_candle_low - third_candle_high > second_candle_low * .02
+
+        return first_candle_high > second_candle_high and third_candle_high < second_candle_low \
+               and gap_met and fourth_candle_low < third_candle_low
+
 
 if __name__ == "__main__":
     shock = Shock()
@@ -156,30 +180,6 @@ if __name__ == "__main__":
             logging.error('Failed retrieving corrupted')
             continue
 
-        high = []
-        low = []
-        data.pop(len(data) - 1)
-        for index in data:
-            high.append(index[2])
-            low.append(index[3])
-
-        if len(high) == 0:
-            logging.error('Failed to get a high range')
-            continue
-
-        if len(low) == 0:
-            logging.error('Failed to get a low range')
-            continue
-
-        high.sort(reverse=True)
-        high_track = float(high[0])
-
-        low.sort()
-        low_track = float(low[0])
-
-        # interval_range
-        interval_range = (high_track - low_track) / (high_track + low_track)
-
         # current position qty of the symbol
         position_details = shock.get_position_details()
 
@@ -197,45 +197,34 @@ if __name__ == "__main__":
             order_flag = -1
             purchase_price = float(position_details['avgEntryPrice'])
 
-        within_range = interval_range <= shock.valve
-        message_str = 'Interval Range: ' + str(interval_range)
+        if order_flag == 1:
+            high = []
+            for index in data:
+                high.append(index[2])
 
-        if within_range:
-            logging.info(message_str)
-        else:
-            logging.warning(message_str)
+            high.sort(reverse=True)
+            high_track = float(high[0])
 
-        logging.info('Close: ' + str(now_price))
-        logging.info('High: ' + str(high_track))
-        logging.info('Low: ' + str(low_track))
+            if now_price <= purchase_price:
+                if 1 - (now_price / purchase_price) >= shock.stopLossThreshold:
+                    shock.create_sell_market_order()
+            elif now_price > high_track:
+                shock.create_sell_market_order()
+        elif order_flag == -1:
+            low = []
+            for index in data:
+                low.append(index[3])
 
-        if within_range:
-            if order_flag != 0:
-                if purchase_price == 0.0:
-                    logging.error('Failed retrieving last purchase price')
-                    continue
+            low.sort()
+            low_track = float(low[0])
 
-                # future close
-                if order_flag == 1:
-                    if now_price <= purchase_price:
-                        if 1 - (now_price / purchase_price) >= shock.stopLossThreshold:
-                            shock.create_sell_market_order()
-                            order_flag = 0
-                    elif now_price > high_track:
-                        shock.create_sell_market_order()
-                        order_flag = 0
-                elif order_flag == -1:
-                    if now_price >= purchase_price:
-                        if 1 - (purchase_price / now_price) >= shock.stopLossThreshold:
-                            shock.create_buy_market_order()
-                            order_flag = 0
-                    elif now_price < low_track:
-                        shock.create_buy_market_order()
-                        order_flag = 0
-
-            # future open
-            if order_flag == 0:
-                if now_price > high_track:
-                    shock.create_sell_limit_order(now_price)
-                elif now_price < low_track:
-                    shock.create_buy_limit_order(now_price)
+            if now_price >= purchase_price:
+                if 1 - (purchase_price / now_price) >= shock.stopLossThreshold:
+                    shock.create_buy_market_order()
+            elif now_price < low_track:
+                shock.create_buy_market_order()
+        elif order_flag == 0:
+            if shock.is_three_line_strike(data):
+                shock.create_buy_market_order()
+            elif shock.is_two_block_gapping(data):
+                shock.create_sell_market_order()
